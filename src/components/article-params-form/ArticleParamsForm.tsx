@@ -6,6 +6,9 @@ import { Select } from 'src/ui/select';
 import { RadioGroup } from 'src/ui/radio-group';
 import { Separator } from 'src/ui/separator';
 import { Text } from 'src/ui/text';
+
+import { useCloseOnOutsideClickOrEsc } from 'src/components/hook/useCloseOnOutsideClickOrEsc';
+
 import {
 	ArticleStateType,
 	defaultArticleState,
@@ -23,8 +26,11 @@ interface ArticleParamsFormProps {
 	onApply: (state: ArticleStateType) => void;
 }
 
-export const ArticleParamsForm = ({ appliedState, onApply }: ArticleParamsFormProps) => {
-	const [isOpen, setIsOpen] = useState(false);
+export const ArticleParamsForm = ({
+	appliedState,
+	onApply,
+}: ArticleParamsFormProps) => {
+	const [isSettingSidebarOpen, setIsSettingSidebarOpen] = useState(false);
 	const [localState, setLocalState] = useState<ArticleStateType>(appliedState);
 	const sidebarRef = useRef<HTMLElement>(null);
 
@@ -32,67 +38,59 @@ export const ArticleParamsForm = ({ appliedState, onApply }: ArticleParamsFormPr
 		setLocalState(appliedState);
 	}, [appliedState]);
 
-	useEffect(() => {
-		if (!isOpen) return;
+	useCloseOnOutsideClickOrEsc({
+		isSettingSidebarOpen,
+		sidebarRef,
+		setIsSettingSidebarOpen: () => setIsSettingSidebarOpen(false),
+	});
 
-		const handleClickOutside = (event: MouseEvent) => {
-			const target = event.target as Node;
-			if (
-				sidebarRef.current &&
-				!sidebarRef.current.contains(target) &&
-				!(event.target as HTMLElement).closest('[role="button"][aria-label*="Открыть/Закрыть"]')
-			) {
-				setIsOpen(false);
-			}
-		};
+	const toggleSidebar = () => setIsSettingSidebarOpen((prev) => !prev);
 
-		document.addEventListener('mousedown', handleClickOutside);
-		return () => {
-			document.removeEventListener('mousedown', handleClickOutside);
-		};
-	}, [isOpen]);
-
-	const toggleSidebar = () => setIsOpen(prev => !prev);
-
-	const handleFontFamilyChange = (option: (typeof fontFamilyOptions)[number]) => {
-		setLocalState(prev => ({ ...prev, fontFamilyOption: option }));
+	const handleFontFamilyChange = (
+		option: (typeof fontFamilyOptions)[number]
+	) => {
+		setLocalState((prev) => ({ ...prev, fontFamilyOption: option }));
 	};
 
 	const handleFontSizeChange = (option: (typeof fontSizeOptions)[number]) => {
-		setLocalState(prev => ({ ...prev, fontSizeOption: option }));
+		setLocalState((prev) => ({ ...prev, fontSizeOption: option }));
 	};
 
 	const handleFontColorChange = (option: (typeof fontColors)[number]) => {
-		setLocalState(prev => ({ ...prev, fontColor: option }));
+		setLocalState((prev) => ({ ...prev, fontColor: option }));
 	};
 
-	const handleBackgroundColorChange = (option: (typeof backgroundColors)[number]) => {
-		setLocalState(prev => ({ ...prev, backgroundColor: option }));
+	const handleBackgroundColorChange = (
+		option: (typeof backgroundColors)[number]
+	) => {
+		setLocalState((prev) => ({ ...prev, backgroundColor: option }));
 	};
 
-	const handleContentWidthChange = (option: (typeof contentWidthArr)[number]) => {
-		setLocalState(prev => ({ ...prev, contentWidth: option }));
+	const handleContentWidthChange = (
+		option: (typeof contentWidthArr)[number]
+	) => {
+		setLocalState((prev) => ({ ...prev, contentWidth: option }));
 	};
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
 		onApply(localState);
-		setIsOpen(false);
+		setIsSettingSidebarOpen(false);
 	};
 
 	const handleReset = () => {
 		setLocalState(defaultArticleState);
 		onApply(defaultArticleState);
-		setIsOpen(false);
+		setIsSettingSidebarOpen(false);
 	};
 
 	return (
 		<>
-			<ArrowButton isOpen={isOpen} onClick={toggleSidebar} />
+			<ArrowButton isOpen={isSettingSidebarOpen} onClick={toggleSidebar} />
 			<aside
 				ref={sidebarRef}
 				className={clsx(styles.container, {
-					[styles.container_open]: isOpen,
+					[styles.container_open]: isSettingSidebarOpen,
 				})}>
 				<form className={styles.form} onSubmit={handleSubmit}>
 					<div className={styles.textSettings}>
@@ -137,7 +135,7 @@ export const ArticleParamsForm = ({ appliedState, onApply }: ArticleParamsFormPr
 					<div className={styles.actionButtons}>
 						<Button
 							title='Сброс'
-							htmlType='button'
+							htmlType='reset'
 							type='clear'
 							onClick={handleReset}
 						/>
